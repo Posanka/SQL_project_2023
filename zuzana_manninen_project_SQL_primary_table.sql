@@ -7,14 +7,9 @@ CREATE OR REPLACE TABLE t_zuzana_manninen_project_sql_primary_final
 WITH price_growth AS (
 	-- nárůst cen potravin
 	WITH last_avg_price_year AS (
-		SELECT YEAR(cp2.date_from) AS y, cp2.date_from, AVG(cp2.value) AS avg_price
+		SELECT YEAR(cp2.date_from) AS y, AVG(cp2.value) AS avg_price
 		FROM czechia_price cp2
-		WHERE cp2.date_from IN (
-			SELECT max(cp2.date_from) AS latest_obs
-			FROM czechia_price cp2
-			GROUP BY YEAR(cp2.date_from)
-		)
-		GROUP BY cp2.date_from
+		GROUP BY YEAR(cp2.date_from)
 	)
 	SELECT
 		price_y2.y AS price_y2,
@@ -22,7 +17,7 @@ WITH price_growth AS (
 		price_y2.avg_price AS price_y2_value,
 		price_y1.avg_price AS price_y1_value,
 		price_y2.avg_price - price_y1.avg_price AS price_diff,
-		round((price_y2.avg_price - price_y1.avg_price) / price_y1.avg_price * 100, 0) AS price_diff_prc
+		round((price_y2.avg_price - price_y1.avg_price) / price_y1.avg_price * 100, 1) AS price_diff_prc
 	FROM last_avg_price_year price_y1
 	JOIN last_avg_price_year price_y2
 		ON price_y2.y -1 = price_y1.y
@@ -40,7 +35,7 @@ payroll_growth AS (
 			ON cp.unit_code = cpu.code 
 		JOIN czechia_payroll_value_type cpvt 
 			ON cp.value_type_code = cpvt.code
-		WHERE cp.payroll_quarter = 4
+		WHERE 1=1
 			AND cpc.name = 'fyzický'
 			AND cpvt.name = 'Průměrná hrubá mzda na zaměstnance'
 			AND cp.value IS NOT NULL 
@@ -52,7 +47,7 @@ payroll_growth AS (
 		payroll_y2.payroll AS payroll_y2_value,
 		payroll_y1.payroll AS payroll_y1_value,
 		payroll_y2.payroll - payroll_y1.payroll AS payroll_diff,
-		round((payroll_y2.payroll - payroll_y1.payroll) / payroll_y1.payroll * 100, 0) AS payroll_diff_prc
+		round((payroll_y2.payroll - payroll_y1.payroll) / payroll_y1.payroll * 100, 1) AS payroll_diff_prc
 	FROM last_avg_payroll_year payroll_y1
 	JOIN last_avg_payroll_year payroll_y2
 		ON payroll_y2.y -1 = payroll_y1.y
@@ -62,7 +57,7 @@ gdp_growth AS (
 		e.GDP, 
 		e.`year` AS gdp_y1, 
 		e2.`year` AS gdp_y2, 
-		round((e2.GDP - e.GDP)/e.GDP*100, 0) AS gdp_diff_prc
+		round((e2.GDP - e.GDP)/e.GDP*100, 1) AS gdp_diff_prc
 	FROM economies e
 	JOIN economies e2 
 		ON e.country = e2.country 
